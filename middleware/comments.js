@@ -1,38 +1,44 @@
-const express = require('express')
-const uuid = require('uuid')
-const router = express.Router()
-const fs = require('fs')
-const path = require('path')
+const express = require('express');
+const uuid = require('uuid');
+const fs = require('fs').promises;
+const path = require('path');
 
-// Get all comments
-let allComments = null
-fs.readFile(path.join(__dirname, "comments.json"), "utf8", (err, comments) => {
-    allComments = JSON.parse(comments)
-})
-router.get('/', (req, res) => res.json(allComments))
+const router = express.Router();
 
-// Add a comment
-router.post('/', (req, res) => {
-    const newComment = {
-        ...req.body,
-        id: uuid.v4(),
+
+router.get('/', async (req, res, next) => {
+    try{
+        let allComments = await fs.readFile(path.join(__dirname, 'comments.json'), 'utf8');
+
+        allComments = JSON.parse(allComments);
+    
+        return res.json(allComments);
+    } catch (e) {
+        return next(e);
     }
-    let json = JSON.stringify(allComments)
-    fs.readFile(path.join(__dirname, "comments.json"), 'utf8', (err, data) => {
-        if (err) {
-            console.log(err)
-        } else {
-            allComments = JSON.parse(data)
-            allComments.data.push(newComment)
-            json = JSON.stringify(allComments)
-            fs.writeFile(path.join(__dirname, "comments.json"), json, 'utf8', () => console.log('Comment added'))
+});
+
+router.post('/', async (req, res, next) => {
+    try {
+        const newComment = {
+            ...req.body,
+            id: uuid.v4(),
         }
-    })
-    res.redirect('/')
+
+        let allComments = await fs.readFile(path.join(__dirname, "comments.json"), 'utf8');
+
+        allComments = JSON.parse(allComments);
+
+        allComments.data.push(newComment);
+
+        allComments = JSON.stringify(allComments);
+
+        await fs.writeFile(path.join(__dirname, "comments.json"), allComments, 'utf8');
+
+        return res.redirect('/');
+    } catch (e) {
+        return next(e);
+    }
 });
 
 module.exports = router;
-
-router.get('/', async (req, res) => {
-    await 
-})
